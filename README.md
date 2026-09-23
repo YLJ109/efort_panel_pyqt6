@@ -20,23 +20,28 @@ python main.py --shot       离屏渲染截图到 shots/
 efort_client.py        协议层（Modbus TCP / 寄存器语义 / 命令字）—— 纯 stdlib
 app/tokens.py          主题令牌 —— 唯一色源，其它文件禁止写裸色值
 app/progstore.py       程序清单（用户自维护，落盘 programs.json）—— 增删/改名/标记点动服务
+app/pointstore.py      示教点位（落盘 points.json）—— 记录 / 改名 / 删除 / 去这个点
 app/widgets.py         通用控件：卡片 / 状态胶囊 / 关节行（坐标 + ± 按钮）/ 日志
-app/worker.py          机器人工作线程 —— 唯一持有 socket 的线程（含扫描状态机）
+app/worker.py          机器人工作线程 —— 唯一持有 socket 的线程（扫描 / 点动 / 去点位 / 审计）
 app/window.py          主窗口 —— 只做展示与交互（含 ProgDialog）
 app/template.py        点动服务程序的官方建法 + 等价代码
 tools/scan_programs.py 独立扫描器（命令行，只加载不运行）
 tools/probe_load.py    加载信号时间线探针（判据的实测依据）
 tools/mock_slave.py    本地 mock Modbus 从站（复刻真机脾气，供离线自检）
-tools/selftest_gui.py  端到端自检
+tools/selftest_gui.py  端到端自检（166 条，自带 mock）
 tools/verify_layout.py 布局几何验收（可读数值，不靠看图）
 tools/presafe_jog_target.py 运行自写点动程序前把 40139~44 预置成当前角（防冲，只写不触发）
 tools/diag_jog.py      点动链路自检（默认只读；`--fire` 受控触发，含防冲预置）
 tools/jog_axis.py      ★ 单轴点动（真动 + 密集轨迹采样 + 速度对比；默认只读，`--go` 才动）
-tools/make_shortcut.py 生成「一键启动」桌面按钮（本机禁 COM，改用 pylnk3 写 .lnk）
+tools/make_shortcut.py 生成「一键启动」桌面按钮（本机禁 COM，改用 pylnk3 写 .lnk；实测产物不可用，见下）
 启动面板.bat / 启动面板_诊断.bat  双击启动（前者无黑窗；后者留屏排错）
-docs/                  埃夫特官方资料速查、方案与操作指引
-logs/                  审计日志（audit-YYYYMMDD.log）+ 扫描结果（scan-*.json）
+xpl/                   控制器程序存档（真实 XML 结构，可直接导入示教器）
+docs/                  方案、操作指引、验收记录、官方控制手册摘要
+docs/证据/             实机采样证据（jog_axis 轨迹 CSV）
+docs/官方资料/         厂商手册的官方获取入口（版权资料，仓库不分发原件）
+logs/                  审计日志（audit-YYYYMMDD.log）+ 扫描结果（scan-*.json）—— 运行期产物，不入库
 programs.json          程序清单（程序号 / 名字 / 备注 / 哪个是点动服务程序）
+points.json            示教点位（可手改，也可在界面⑥卡里操作）
 ```
 
 **分层铁律**：UI 线程永不碰 socket。所有 I/O 在 `RobotWorker` 单线程串行，通过 `queue` 与 UI 通信。
@@ -52,8 +57,9 @@ programs.json          程序清单（程序号 / 名字 / 备注 / 哪个是点
 | ③ 点动服务程序 | 当前点动服务程序状态、参数区写回自检、**程序模板** |
 | ④ 关节 | **6 个坐标** + **J1~J6 的 −/+ 步进（12 个按钮）** + 当前在动指示 + 步长选择 |
 | ⑤ 程序清单 | **添加 / 改名 / 删除 / 设为点动服务** + 扫描 + 速度 + **测试时长** + **▶ 测试跑** / **▶ 执行** / 停止 |
-| ⑥ 状态 | 状态胶囊 / 速度 / 程序号 / 报警码 / 40101 / 40139~44 |
-| ⑦ 事件日志 | 彩色分级 + 审计落盘 |
+| ⑥ 点位（示教点） | **记录当前点 / 去这个点 / 改名 / 删除** + 选中后各轴位移预演（点位存 `points.json`） |
+| ⑦ 状态 | 状态胶囊 / 速度 / 程序号 / 报警码 / 40101 / 40139~44 |
+| ⑧ 事件日志 | 彩色分级 + 审计落盘 |
 
 ---
 
