@@ -1,0 +1,21 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ---- 运行期产物（代码会自动重建目录，不入库）----
+logs/
+shots/
+
+# ---- 本机残留 / 已知坏件 ----
+_坏的快捷方式.lnk.broken
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp
+*~
